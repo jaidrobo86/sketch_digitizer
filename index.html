@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sketch Digitizer — D&R Group</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #07111f;
+  --surface: #0d1e35;
+  --surf2:   #132844;
+  --surf3:   #1a3358;
+  --border:  #1e3d65;
+  --bord2:   #2a527f;
+  --accent:  #4a9eff;
+  --acc2:    #7bbfff;
+  --gold:    #c8a84b;
+  --text:    #e8eef5;
+  --muted:   #5a7898;
+  --muted2:  #3a5878;
+  --danger:  #e05555;
+  --warn:    #e09a30;
+  --ok:      #3db87a;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(74,158,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(74,158,255,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+/* GATE */
+#gate{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.gate-box{background:var(--surface);border:1px solid var(--bord2);padding:52px 60px;width:420px;text-align:center}
+.gate-logos{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:32px;min-height:44px}
+.gate-logos img{height:40px;object-fit:contain}
+.gate-div{width:1px;height:36px;background:var(--bord2)}
+.gate-box h2{font-weight:700;font-size:19px;color:var(--text);margin-bottom:6px}
+.gate-box p{font-size:12px;color:var(--muted);margin-bottom:28px;letter-spacing:.03em}
+.gate-input{width:100%;background:var(--surf2);border:1px solid var(--bord2);color:var(--text);font-family:var(--mono);font-size:14px;padding:12px 14px;outline:none;letter-spacing:.14em;text-align:center;margin-bottom:14px;transition:border-color .15s}
+.gate-input:focus{border-color:var(--accent)}
+.gate-btn{width:100%;background:var(--accent);color:#000;font-family:var(--sans);font-weight:700;font-size:13px;letter-spacing:.08em;padding:12px;border:none;cursor:pointer;text-transform:uppercase;transition:background .15s}
+.gate-btn:hover{background:var(--acc2)}
+.gate-err{margin-top:12px;font-size:12px;color:var(--danger);letter-spacing:.04em;min-height:18px}
+
+/* MODAL */
+#confirm-modal{display:none;position:fixed;inset:0;z-index:500;background:rgba(7,17,31,.88);align-items:center;justify-content:center}
+#confirm-modal.on{display:flex}
+.modal-box{background:var(--surface);border:1px solid var(--bord2);width:560px;max-width:95vw;max-height:82vh;display:flex;flex-direction:column}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.modal-icon{width:30px;height:30px;background:rgba(224,154,48,.12);border:1px solid var(--warn);display:grid;place-items:center;flex-shrink:0}
+.modal-icon svg{width:15px;height:15px}
+.modal-ttl{font-weight:600;font-size:14px}
+.modal-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.modal-body{padding:20px 22px;overflow-y:auto;flex:1}
+.modal-intro{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.65;border-left:3px solid var(--warn);padding-left:12px}
+.ci{background:var(--surf2);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px}
+.ci-hdr{font-size:10px;color:var(--warn);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;font-family:var(--mono)}
+.ci-q{font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.5}
+.ci-row{display:flex;gap:8px;align-items:center}
+.ci-input{flex:1;background:var(--surf3);border:1px solid var(--bord2);color:var(--text);font-family:var(--mono);font-size:13px;padding:8px 12px;outline:none;transition:border-color .15s}
+.ci-input:focus{border-color:var(--accent)}
+.ci-unit{font-size:11px;color:var(--muted);font-family:var(--mono);min-width:28px}
+.modal-ftr{padding:16px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+/* APP */
+#app{position:relative;z-index:1}
+.wrap{max-width:1160px;margin:0 auto;padding:0 28px 80px}
+
+/* HEADER */
+header{padding:28px 0 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;margin-bottom:34px}
+.hdr-logos{display:flex;align-items:center;gap:14px}
+.logo-slot{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px dashed var(--bord2);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0;transition:border-color .2s}
+.logo-slot:hover{border-color:var(--accent)}
+.logo-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.logo-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none}
+.logo-slot img.vis{display:block}
+.logo-slot svg{width:16px;height:16px;opacity:.3;transition:opacity .2s}
+.logo-slot:hover svg{opacity:.7}
+.logo-divider{width:1px;height:30px;background:var(--bord2)}
+.hdr-text{flex:1}
+.hdr-text h1{font-weight:700;font-size:20px;letter-spacing:.01em;color:var(--text)}
+.hdr-text p{font-size:11px;color:var(--muted);letter-spacing:.07em;margin-top:3px;font-family:var(--mono);text-transform:uppercase}
+.badge{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);border:1px solid var(--bord2);padding:5px 12px;font-family:var(--mono);background:rgba(74,158,255,.05)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:720px){.layout{grid-template-columns:1fr}}
+
+/* PANEL */
+.panel{background:var(--surface);border:1px solid var(--border)}
+.pnl-hdr{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.pnl-num{font-size:10px;font-family:var(--mono);color:var(--accent);background:rgba(74,158,255,.08);padding:2px 8px;border:1px solid rgba(74,158,255,.2);letter-spacing:.06em}
+.pnl-ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.pnl-body{padding:18px}
+
+/* UPLOAD */
+#drop-zone{border:1px dashed var(--bord2);padding:36px 20px;text-align:center;cursor:pointer;position:relative;background:var(--surf2);transition:all .2s}
+#drop-zone:hover,#drop-zone.over{border-color:var(--accent);background:rgba(74,158,255,.04)}
+#drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.up-icon{width:44px;height:44px;margin:0 auto 14px;opacity:.35}
+.up-txt{font-size:12px;color:var(--muted);line-height:1.7}
+.up-txt strong{color:var(--acc2)}
+#preview-wrap{display:none}
+#preview-img{width:100%;max-height:260px;object-fit:contain;background:#000;display:block}
+.img-act{display:flex;gap:8px;padding:10px 0 0}
+
+/* BUTTONS */
+.btn{font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:.06em;padding:10px 20px;border:none;cursor:pointer;transition:all .15s;text-transform:uppercase;flex-shrink:0}
+.btn-p{background:var(--accent);color:#000;font-weight:700}
+.btn-p:hover{background:var(--acc2)}
+.btn-p:disabled{background:var(--surf3);color:var(--muted2);cursor:not-allowed}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--bord2)}
+.btn-g:hover{color:var(--text);border-color:var(--muted)}
+.btn-full{width:100%;margin-top:14px}
+
+/* STATUS */
+#status{display:none;margin-top:14px;padding:11px 14px;font-size:11px;letter-spacing:.04em;line-height:1.7;font-family:var(--mono);border-left:3px solid var(--accent);background:rgba(74,158,255,.05);color:var(--acc2)}
+#status.err{border-color:var(--danger);background:rgba(224,85,85,.05);color:var(--danger)}
+#status.ok{border-color:var(--ok);background:rgba(61,184,122,.05);color:var(--ok)}
+#status.warn{border-color:var(--warn);background:rgba(224,154,48,.05);color:var(--warn)}
+
+/* FIELDS */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;font-weight:500}
+.field select,.field textarea,.field input[type=text]{width:100%;background:var(--surf2);border:1px solid var(--bord2);color:var(--text);font-family:var(--sans);font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;-webkit-appearance:none}
+.field select:focus,.field textarea:focus,.field input[type=text]:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:68px;line-height:1.6}
+
+/* DRAWING */
+#drawing-panel{grid-column:1 / -1;display:none}
+#drawing-container{background:#fff;min-height:400px;overflow:auto}
+#drawing-container canvas{display:block;max-width:100%}
+.draw-tb{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.draw-tb .btn{padding:6px 14px;font-size:11px}
+.scale-lbl{margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:.06em;font-family:var(--mono)}
+
+/* DATA */
+#data-panel{display:none}
+.dim-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)}
+.dim-lbl{color:var(--muted)}
+.dim-val{color:var(--acc2);font-weight:700}
+.sec-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);padding:0 0 7px;border-bottom:1px solid var(--border);margin-bottom:12px;font-family:var(--mono)}
+
+/* SPINNER */
+.sp{display:inline-block;width:11px;height:11px;border:2px solid rgba(74,158,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logos" id="gate-logos">
+      <span style="font-size:12px;color:var(--muted);font-family:var(--mono)">D&amp;R GROUP</span>
+    </div>
+    <h2>Sketch Digitizer</h2>
+    <p>Restricted access — authorised personnel only</p>
+    <input type="password" class="gate-input" id="gate-pwd" placeholder="Password"
+      onkeydown="if(event.key==='Enter')checkPwd()">
+    <button class="gate-btn" onclick="checkPwd()">Enter</button>
+    <div class="gate-err" id="gate-err"></div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#e09a30" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="modal-ttl">Please verify these measurements</div>
+        <div class="modal-sub">The AI was uncertain about the following values — confirm or correct before drawing</div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-intro">Some numbers could not be read with confidence — possibly due to handwriting style, image angle, or overlapping annotations. Check each value below and correct if needed.</div>
+      <div id="confirm-items"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-g" onclick="dismissConfirm()">Use AI values as-is</button>
+      <button class="btn btn-p" onclick="applyConfirmed()">Confirm &amp; Draw →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+<div class="wrap">
+
+  <header>
+    <div class="hdr-logos">
+      <div class="logo-slot" title="Click to upload logo">
+        <input type="file" accept="image/*" onchange="uploadLogo(event,1)">
+        <img id="hlo1" alt="Logo 1">
+        <svg id="hpl1" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <div class="logo-divider"></div>
+      <div class="logo-slot" title="Click to upload logo">
+        <input type="file" accept="image/*" onchange="uploadLogo(event,2)">
+        <img id="hlo2" alt="Logo 2">
+        <svg id="hpl2" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+    </div>
+    <div class="hdr-text">
+      <h1>Sketch Digitizer</h1>
+      <p>Photo → Scaled Top-View Drawing &nbsp;/&nbsp; D&amp;R Group</p>
+    </div>
+    <div class="badge">AI&#8209;Powered</div>
+  </header>
+
+  <div class="layout">
+
+    <div class="panel">
+      <div class="pnl-hdr"><span class="pnl-num">01</span><span class="pnl-ttl">Upload Sketch</span></div>
+      <div class="pnl-body">
+        <div id="drop-zone">
+          <input type="file" id="file-input" accept="image/*">
+          <div class="up-icon">
+            <svg viewBox="0 0 48 48" fill="none">
+              <rect x="4" y="4" width="40" height="40" rx="2" stroke="#5a7898" stroke-width="2"/>
+              <path d="M16 32 L24 20 L32 32" stroke="#5a7898" stroke-width="2" fill="none"/>
+              <circle cx="31" cy="19" r="3" stroke="#5a7898" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="up-txt"><strong>Click or drag</strong> to upload a photo<br>of your hand-drawn sketch with dimensions<br>
+            <span style="font-size:10px;margin-top:4px;display:block;color:var(--muted2)">JPG, PNG, WEBP — up to 20MB</span>
+          </div>
+        </div>
+        <div id="preview-wrap">
+          <img id="preview-img" alt="Sketch">
+          <div class="img-act">
+            <button class="btn btn-g" onclick="resetUpload()">↺ Replace</button>
+            <span style="margin-left:auto;font-size:10px;color:var(--muted);align-self:center;font-family:var(--mono)" id="file-name"></span>
+          </div>
+        </div>
+        <div id="status"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="pnl-hdr"><span class="pnl-num">02</span><span class="pnl-ttl">Context &amp; Options</span></div>
+      <div class="pnl-body">
+        <div class="field">
+          <label>Shape type</label>
+          <select id="shape-type">
+            <option value="auto">Auto-detect from sketch</option>
+            <option value="rectangle">Rectangle / Panel</option>
+            <option value="triangle">Triangle</option>
+            <option value="trapezoid">Trapezoid</option>
+            <option value="irregular polygon">Irregular Polygon</option>
+            <option value="circle">Circle / Oval</option>
+            <option value="L-shape">L-Shape</option>
+            <option value="custom">Custom (describe below)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Unit of measurement</label>
+          <select id="unit">
+            <option value="mm">Millimetres (mm)</option>
+            <option value="m">Metres (m)</option>
+            <option value="cm">Centimetres (cm)</option>
+            <option value="in">Inches (in)</option>
+            <option value="ft">Feet (ft)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Additional context (optional)</label>
+          <textarea id="context-note"></textarea>
+        </div>
+        <div class="field">
+          <label>Drawing title</label>
+          <input type="text" id="drawing-title">
+        </div>
+        <button class="btn btn-p btn-full" id="analyze-btn" onclick="analyzeSketch()" disabled>Digitize Sketch →</button>
+      </div>
+    </div>
+
+    <div class="panel" id="data-panel">
+      <div class="pnl-hdr"><span class="pnl-num">03</span><span class="pnl-ttl">Extracted Dimensions</span></div>
+      <div class="pnl-body">
+        <div id="dim-list"></div>
+        <div id="ai-notes" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.7;font-family:var(--mono)"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="drawing-panel">
+      <div class="pnl-hdr"><span class="pnl-num">04</span><span class="pnl-ttl">Top-View Drawing</span></div>
+      <div class="draw-tb">
+        <button class="btn btn-g" onclick="downloadPDF()">↓ Export PDF</button>
+        <button class="btn btn-g" onclick="downloadPNG()">↓ Export PNG</button>
+        <span class="scale-lbl" id="scale-label"></span>
+      </div>
+      <div id="drawing-container"><canvas id="draw-canvas"></canvas></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ── CONFIGURATION ─────────────────────────────────────────────────────────
+const APP_PASSWORD = 'drgroup2025';       // change before deploying
+const WORKER_URL   = 'https://sketch-proxy.jaidrobo.workers.dev';
+
+// ── PASSWORD GATE ─────────────────────────────────────────────────────────
+function checkPwd() {
+  if (document.getElementById('gate-pwd').value === APP_PASSWORD) {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } else {
+    document.getElementById('gate-err').textContent = 'Incorrect password.';
+    document.getElementById('gate-pwd').value = '';
+    document.getElementById('gate-pwd').focus();
+  }
+}
+
+// ── LOGO UPLOAD ───────────────────────────────────────────────────────────
+const logos = { 1: null, 2: null };
+
+function uploadLogo(evt, n) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    logos[n] = e.target.result;
+    const img = document.getElementById(`hlo${n}`);
+    img.src = e.target.result;
+    img.classList.add('vis');
+    document.getElementById(`hpl${n}`).style.display = 'none';
+    // Sync to gate screen
+    const gl = document.getElementById('gate-logos');
+    gl.innerHTML = '';
+    if (logos[1]) { const i=document.createElement('img'); i.src=logos[1]; i.style.height='36px'; i.style.objectFit='contain'; gl.appendChild(i); }
+    if (logos[1]&&logos[2]) { const d=document.createElement('div'); d.className='gate-div'; gl.appendChild(d); }
+    if (logos[2]) { const i=document.createElement('img'); i.src=logos[2]; i.style.height='36px'; i.style.objectFit='contain'; gl.appendChild(i); }
+    if (!logos[1]&&!logos[2]) gl.innerHTML='<span style="font-size:12px;color:var(--muted);font-family:var(--mono)">D&R GROUP</span>';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── FILE UPLOAD ───────────────────────────────────────────────────────────
+let imgB64 = null, imgMime = 'image/jpeg';
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => { if(fi.files[0]) loadFile(fi.files[0]); });
+
+function loadFile(file) {
+  if (!file.type.startsWith('image/')) { setStatus('Please upload an image file.','err'); return; }
+  imgMime = file.type || 'image/jpeg';
+  const r = new FileReader();
+  r.onload = e => {
+    imgB64 = e.target.result.split(',')[1];
+    document.getElementById('preview-img').src = e.target.result;
+    dz.style.display = 'none';
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('analyze-btn').disabled = false;
+    document.getElementById('status').style.display = 'none';
+  };
+  r.readAsDataURL(file);
+}
+
+function resetUpload() {
+  imgB64 = null;
+  document.getElementById('preview-img').src = '';
+  dz.style.display = '';
+  document.getElementById('preview-wrap').style.display = 'none';
+  fi.value = '';
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('data-panel').style.display = 'none';
+  document.getElementById('drawing-panel').style.display = 'none';
+  document.getElementById('status').style.display = 'none';
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────
+function setStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.style.display = 'block';
+  el.className = type || '';
+  el.innerHTML = (!type || type==='loading') ? `<span class="sp"></span>${msg}` : msg;
+}
+
+// ── CONFIRM MODAL ─────────────────────────────────────────────────────────
+let pendingData = null, pendingTitle = '', pendingUnit = 'mm';
+
+function showConfirm(data, title, unit) {
+  pendingData  = JSON.parse(JSON.stringify(data));
+  pendingTitle = title; pendingUnit = unit;
+  const c = document.getElementById('confirm-items');
+  c.innerHTML = '';
+  (data.uncertain_readings || []).forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'ci';
+    d.innerHTML = `<div class="ci-hdr">Uncertain reading ${i+1}</div>
+      <div class="ci-q">${item.question}</div>
+      <div class="ci-row">
+        <input class="ci-input" id="ci${i}" type="text" value="${item.ai_value}"
+          data-field="${item.field}" data-key="${item.key||''}">
+        <span class="ci-unit">${unit}</span>
+      </div>`;
+    c.appendChild(d);
+  });
+  document.getElementById('confirm-modal').classList.add('on');
+}
+
+function applyConfirmed() {
+  (pendingData.uncertain_readings || []).forEach((item, i) => {
+    const v = parseFloat(document.getElementById(`ci${i}`).value);
+    if (isNaN(v)) return;
+    if (item.field === 'edge' && item.key) {
+      const [f,t] = item.key.split('-');
+      const e = (pendingData.edges||[]).find(x=>x.from===f&&x.to===t);
+      if (e) e.value = v;
+    } else if (item.field === 'diagonal' && item.key) {
+      const [f,t] = item.key.split('-');
+      const d = (pendingData.diagonals||[]).find(x=>x.from===f&&x.to===t);
+      if (d) d.value = v;
+    } else if (item.field === 'dimension' && item.key) {
+      const d = (pendingData.dimensions||[]).find(x=>x.label===item.key);
+      if (d) d.value = v;
+    }
+  });
+  document.getElementById('confirm-modal').classList.remove('on');
+  renderCanvas(pendingData, pendingTitle, pendingUnit);
+}
+
+function dismissConfirm() {
+  document.getElementById('confirm-modal').classList.remove('on');
+  renderCanvas(pendingData, pendingTitle, pendingUnit);
+}
+
+// ── API ───────────────────────────────────────────────────────────────────
+async function callAPI(prompt, imageB64, imageMime) {
+  const parts = [];
+  if (imageB64) {
+    parts.push({ inlineData: { mimeType: imageMime || 'image/jpeg', data: imageB64 } });
+  }
+  parts.push({ text: prompt });
+
+  const r = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts }] })
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────
+async function analyzeSketch() {
+  if (!imgB64) return;
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true; btn.textContent = 'Analysing…';
+  const shape = document.getElementById('shape-type').value;
+  const unit  = document.getElementById('unit').value;
+  const note  = document.getElementById('context-note').value.trim();
+  const title = document.getElementById('drawing-title').value.trim() || 'Untitled Drawing';
+
+  setStatus('Reading sketch — extracting dimensions…');
+
+  const prompt = `You are a technical drawing interpreter for an industrial fabrication company (shade sails, PVC membranes, tank liners).
+
+Extract ALL visible information from this hand-drawn measurement sketch precisely.
+${note ? `\nUser context: ${note}` : ''}
+Shape hint: ${shape === 'auto' ? 'determine from sketch' : shape}
+Assumed unit: ${unit}
+
+CRITICAL — for any number you cannot read with HIGH confidence (due to handwriting, smudging, ambiguity, or possible misread digit), add it to "uncertain_readings" with a plain-English question for the user to confirm.
+
+For POLYGON shapes (labelled corners A, B, C, D, E, F…):
+- List edges (perimeter sides) and diagonals separately
+- Compute vertex positions via trilateration: place first vertex at (0,0), second at (edge_AB, 0), then trilaterate each remaining vertex from two known distances
+- y-axis positive = downward (canvas coordinates). Clamp h=0 if measurements slightly inconsistent.
+
+Return ONLY valid JSON, no markdown:
+{
+  "shape": "rectangle|triangle|trapezoid|polygon|circle|L-shape|other",
+  "unit": "${unit}",
+  "edges": [{"from":"A","to":"B","value":3030}],
+  "diagonals": [{"from":"A","to":"C","value":6040}],
+  "vertices": [{"label":"A","x":0,"y":0}],
+  "point_heights": [{"label":"A","height":2.2,"height_unit":"m","fixing":"DS 10mm"}],
+  "dimensions": [],
+  "features": [{"type":"note","description":"D is at a pole"}],
+  "uncertain_readings": [
+    {"question":"The distance between A and B reads as 3030 — is this correct?","ai_value":"3030","field":"edge","key":"A-B"}
+  ],
+  "notes": "any observations or assumptions",
+  "confidence": "high|medium|low"
+}`;
+
+  let extracted;
+  try {
+    const raw = await callAPI(prompt, imgB64, imgMime);
+
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('No structured data in response.');
+    try { extracted = JSON.parse(m[0]); }
+    catch {
+      let rep = m[0];
+      for (let i=0; i<12; i++) {
+        rep += ']';
+        try { extracted = JSON.parse(rep+'}'); break; } catch {}
+        try { extracted = JSON.parse(rep); break; } catch {}
+      }
+      if (!extracted) throw new Error('Could not parse extracted data.');
+    }
+  } catch(e) {
+    setStatus('Extraction failed: ' + e.message, 'err');
+    btn.disabled = false; btn.textContent = 'Digitize Sketch →';
+    return;
+  }
+
+  renderDimPanel(extracted, unit);
+  btn.disabled = false; btn.textContent = 'Digitize Sketch →';
+
+  const uncertain = extracted.uncertain_readings || [];
+  if (uncertain.length > 0) {
+    setStatus(`⚠ ${uncertain.length} uncertain reading${uncertain.length>1?'s':''} — please verify below before drawing.`, 'warn');
+    showConfirm(extracted, title, unit);
+  } else {
+    setStatus('Rendering drawing…');
+    renderCanvas(extracted, title, unit);
+  }
+}
+
+// ── DIM PANEL ─────────────────────────────────────────────────────────────
+function renderDimPanel(data, unit) {
+  document.getElementById('data-panel').style.display = 'block';
+  const u = unit || data.unit || 'mm';
+  const rows = arr => arr.map(r => r).join('');
+  const edgeR = (data.edges||[]).map(e=>`<div class="dim-row"><span class="dim-lbl">Edge ${e.from}–${e.to}</span><span class="dim-val">${parseFloat(e.value).toLocaleString()} ${u}</span></div>`).join('');
+  const diagR = (data.diagonals||[]).map(d=>`<div class="dim-row"><span class="dim-lbl">Diagonal ${d.from}–${d.to}</span><span class="dim-val">${parseFloat(d.value).toLocaleString()} ${u}</span></div>`).join('');
+  const dimR  = (data.dimensions||[]).map(d=>`<div class="dim-row"><span class="dim-lbl">${d.label}</span><span class="dim-val">${parseFloat(d.value).toLocaleString()} ${u}</span></div>`).join('');
+  const htR   = (data.point_heights||[]).map(h=>`<div class="dim-row"><span class="dim-lbl">Ht ${h.label}</span><span class="dim-val">${h.height}${h.height_unit||'m'} ${h.fixing||''}</span></div>`).join('');
+  const ub = (data.uncertain_readings||[]).length
+    ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(224,154,48,.08);border-left:3px solid var(--warn);font-size:11px;color:var(--warn);font-family:var(--mono)">⚠ ${data.uncertain_readings.length} uncertain reading${data.uncertain_readings.length>1?'s':''}</div>` : '';
+  document.getElementById('dim-list').innerHTML = `<div class="sec-lbl">Shape: ${data.shape} · Confidence: ${data.confidence}</div>${ub}${edgeR}${diagR}${dimR}${htR}`;
+  document.getElementById('ai-notes').innerHTML = data.notes ? `<strong style="color:var(--muted)">AI notes:</strong> ${data.notes}` : '';
+}
+
+// ── GEOMETRY ──────────────────────────────────────────────────────────────
+function trilaterate(p1, d1, p2, d2) {
+  const dx=p2.x-p1.x, dy=p2.y-p1.y, d=Math.hypot(dx,dy);
+  if (d<1e-9) return [{x:p1.x+d1,y:p1.y}];
+  const a=(d1*d1-d2*d2+d*d)/(2*d), h=Math.sqrt(Math.max(0,d1*d1-a*a));
+  const mx=p1.x+a*dx/d, my=p1.y+a*dy/d;
+  return [{x:mx+h*dy/d,y:my-h*dx/d},{x:mx-h*dy/d,y:my+h*dx/d}];
+}
+
+function reconstructVerts(edges, diags) {
+  if (!edges||edges.length<2) return null;
+  const dist={};
+  const sd=(a,b,v)=>{dist[`${a}-${b}`]=v;dist[`${b}-${a}`]=v;};
+  edges.forEach(e=>sd(e.from,e.to,parseFloat(e.value)));
+  (diags||[]).forEach(d=>sd(d.from,d.to,parseFloat(d.value)));
+  const lbls=[edges[0].from];
+  edges.forEach(e=>{if(!lbls.includes(e.to))lbls.push(e.to);});
+  const pts={};
+  pts[lbls[0]]={x:0,y:0};
+  if(lbls.length>=2) pts[lbls[1]]={x:dist[`${lbls[0]}-${lbls[1]}`]||1000,y:0};
+  for(let i=2;i<lbls.length;i++){
+    const l=lbls[i];
+    const refs=lbls.slice(0,i).filter(r=>dist[`${r}-${l}`]>0);
+    if(refs.length>=2){
+      const [r1,r2]=refs;
+      const sols=trilaterate(pts[r1],dist[`${r1}-${l}`],pts[r2],dist[`${r2}-${l}`]);
+      pts[l]=sols[0].y>sols[1].y?sols[0]:sols[1];
+    } else if(refs.length===1){
+      const r=refs[0],dv=dist[`${r}-${l}`]||2000;
+      pts[l]={x:pts[r].x+dv*.7,y:pts[r].y+dv*.7};
+    } else { pts[l]={x:i*2000,y:2000}; }
+  }
+  return lbls.map(l=>({label:l,...pts[l]}));
+}
+
+function outNorm(p1,p2,cen){
+  const dx=p2.x-p1.x,dy=p2.y-p1.y,len=Math.hypot(dx,dy);
+  let nx=-dy/len,ny=dx/len;
+  const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+  if((mx+nx-cen.x)*nx+(my+ny-cen.y)*ny<0){nx=-nx;ny=-ny;}
+  return{x:nx,y:ny};
+}
+
+// ── CANVAS RENDERER ───────────────────────────────────────────────────────
+let curData=null,curTitle='',curUnit='mm';
+
+function renderCanvas(data, title, unit) {
+  curData=data; curTitle=title; curUnit=unit;
+  const cv=document.getElementById('draw-canvas');
+  const CW=1400,CH=900; cv.width=CW; cv.height=CH;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,CW,CH);
+
+  const TB=120, PAD=160, DRAWH=CH-TB;
+  const hasE=data.edges&&data.edges.length>=2;
+  let verts=null;
+  if(hasE){
+    verts=reconstructVerts(data.edges,data.diagonals);
+    if(!verts) verts=(data.vertices||[]).map(v=>({label:v.label||'?',x:v.x,y:v.y}));
+  } else if(data.vertices&&data.vertices.length>=3){
+    verts=data.vertices.map(v=>({label:v.label||'?',x:v.x,y:v.y}));
+  }
+
+  let sw=0,sh=0,mnX=0,mnY=0;
+  if(verts&&verts.length>=3){
+    const xs=verts.map(v=>v.x),ys=verts.map(v=>v.y);
+    mnX=Math.min(...xs); mnY=Math.min(...ys);
+    sw=Math.max(...xs)-mnX; sh=Math.max(...ys)-mnY;
+  } else {
+    (data.dimensions||[]).forEach(d=>{
+      const v=parseFloat(d.value)||0,ax=(d.axis||'').toLowerCase(),lb=(d.label||'').toLowerCase();
+      if(ax==='x'||lb.includes('width')||lb.includes('length'))sw=Math.max(sw,v);
+      if(ax==='y'||lb.includes('height')||lb.includes('depth'))sh=Math.max(sh,v);
+    });
+    if(!sw)sw=2000; if(!sh)sh=sw*.6;
+  }
+
+  const aW=CW-PAD*2, aH=DRAWH-PAD*2;
+  const sc=Math.min(aW/(sw||1),aH/(sh||1))*.78;
+  const ox=PAD+(aW-sw*sc)/2, oy=PAD+(aH-sh*sc)/2;
+  const SX=x=>ox+(x-mnX)*sc, SY=y=>oy+(y-mnY)*sc;
+  const cen=verts
+    ?{x:SX(verts.reduce((s,v)=>s+v.x,0)/verts.length),y:SY(verts.reduce((s,v)=>s+v.y,0)/verts.length)}
+    :{x:ox+sw*sc/2,y:oy+sh*sc/2};
+
+  // Shape fill
+  ctx.save(); ctx.fillStyle='#e8f0fb'; ctx.strokeStyle='#1a1a1a'; ctx.lineWidth=2.5;
+  const shp=(data.shape||'').toLowerCase();
+  if(verts&&verts.length>=3){
+    ctx.beginPath();
+    verts.forEach((v,i)=>i===0?ctx.moveTo(SX(v.x),SY(v.y)):ctx.lineTo(SX(v.x),SY(v.y)));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Diagonals
+    if(data.diagonals&&data.diagonals.length){
+      const vm={}; verts.forEach(v=>vm[v.label]=v);
+      ctx.save(); ctx.strokeStyle='#a8bcd4'; ctx.lineWidth=1; ctx.setLineDash([5,5]);
+      data.diagonals.forEach(d=>{
+        const p1=vm[d.from],p2=vm[d.to]; if(!p1||!p2)return;
+        ctx.beginPath(); ctx.moveTo(SX(p1.x),SY(p1.y)); ctx.lineTo(SX(p2.x),SY(p2.y)); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle='#6a8caa'; ctx.font='10px "IBM Plex Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText(`${d.from}-${d.to}: ${parseFloat(d.value).toLocaleString()}`,(SX(p1.x)+SX(p2.x))/2,(SY(p1.y)+SY(p2.y))/2-7);
+        ctx.setLineDash([5,5]);
+      });
+      ctx.restore();
+    }
+    // Vertex dots
+    ctx.save();
+    verts.forEach(v=>{
+      ctx.fillStyle='#1a5fb4'; ctx.beginPath(); ctx.arc(SX(v.x),SY(v.y),5,0,Math.PI*2); ctx.fill();
+      const dvx=SX(v.x)-cen.x, dvy=SY(v.y)-cen.y, dl=Math.hypot(dvx,dvy)||1;
+      ctx.fillStyle='#111'; ctx.font='bold 13px "IBM Plex Mono",monospace'; ctx.textAlign='center';
+      ctx.fillText(v.label, SX(v.x)+dvx/dl*18, SY(v.y)+dvy/dl*20);
+    });
+    ctx.restore();
+  } else if(shp==='circle'){
+    ctx.beginPath(); ctx.ellipse(ox+sw*sc/2,oy+sh*sc/2,sw/2*sc,sh/2*sc,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  } else if(shp==='triangle'){
+    ctx.beginPath(); ctx.moveTo(ox+sw*sc/2,oy); ctx.lineTo(ox+sw*sc,oy+sh*sc); ctx.lineTo(ox,oy+sh*sc); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else {
+    ctx.fillRect(ox,oy,sw*sc,sh*sc); ctx.strokeRect(ox,oy,sw*sc,sh*sc);
+  }
+  ctx.restore();
+
+  // Edge dim lines
+  if(verts&&verts.length>=3&&hasE){
+    const vm={}; verts.forEach(v=>vm[v.label]=v);
+    ctx.save(); ctx.strokeStyle='#1a5fb4'; ctx.fillStyle='#1a5fb4'; ctx.lineWidth=1.4;
+    const OFF=42;
+    data.edges.forEach(edge=>{
+      const p1=vm[edge.from],p2=vm[edge.to]; if(!p1||!p2)return;
+      const x1=SX(p1.x),y1=SY(p1.y),x2=SX(p2.x),y2=SY(p2.y);
+      const n=outNorm({x:x1,y:y1},{x:x2,y:y2},cen);
+      const ox1=x1+n.x*OFF,oy1=y1+n.y*OFF,ox2=x2+n.x*OFF,oy2=y2+n.y*OFF;
+      ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(ox1,oy1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(ox2,oy2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(ox1,oy1); ctx.lineTo(ox2,oy2); ctx.stroke();
+      arw(ctx,ox1,oy1,ox2,oy2); arw(ctx,ox2,oy2,ox1,oy1);
+      const mx=(ox1+ox2)/2,my=(oy1+oy2)/2;
+      let rot=Math.atan2(oy2-oy1,ox2-ox1);
+      if(rot>Math.PI/2||rot<-Math.PI/2)rot+=Math.PI;
+      ctx.save(); ctx.translate(mx,my); ctx.rotate(rot);
+      ctx.font='bold 11px "IBM Plex Mono",monospace';
+      const lbl=`${edge.from}-${edge.to}: ${parseFloat(edge.value).toLocaleString()} ${unit}`;
+      const tw=ctx.measureText(lbl).width;
+      ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillRect(-tw/2-4,-14,tw+8,16);
+      ctx.fillStyle='#1a5fb4'; ctx.textAlign='center'; ctx.fillText(lbl,0,-2);
+      ctx.restore();
+    });
+    ctx.restore();
+  } else if(!hasE) {
+    bboxDims(ctx,ox,oy,sw*sc,sh*sc,sw,sh,unit);
+  }
+
+  // Heights table
+  const hts=data.point_heights||[];
+  if(hts.length){
+    ctx.save();
+    const cx2=14,sy2=20,rh=15,tw2=240,th2=hts.length*rh+26;
+    ctx.fillStyle='rgba(255,255,255,.94)'; ctx.fillRect(cx2-4,sy2-16,tw2,th2);
+    ctx.strokeStyle='#c8d8e8'; ctx.lineWidth=.5; ctx.strokeRect(cx2-4,sy2-16,tw2,th2);
+    ctx.fillStyle='#1a5fb4'; ctx.font='bold 11px "IBM Plex Mono",monospace'; ctx.textAlign='left';
+    ctx.fillText('POINT HEIGHTS / FIXING',cx2,sy2);
+    ctx.fillStyle='#333'; ctx.font='11px "IBM Plex Mono",monospace';
+    hts.forEach((h,i)=>ctx.fillText(`${h.label}: ${h.height}${h.height_unit||'m'}  ${h.fixing||''}`,cx2,sy2+16+i*rh));
+    ctx.restore();
+  }
+
+  // Title block
+  const tbY=CH-TB;
+  ctx.save();
+  ctx.fillStyle='#f0f4f8'; ctx.fillRect(0,tbY,CW,TB);
+  ctx.lineWidth=2; ctx.strokeStyle='#1a3358';
+  ctx.beginPath(); ctx.moveTo(0,tbY); ctx.lineTo(CW,tbY); ctx.stroke();
+  [CW*.36,CW*.54,CW*.72].forEach(x=>{
+    ctx.lineWidth=.5; ctx.strokeStyle='#c8d8e8';
+    ctx.beginPath(); ctx.moveTo(x,tbY); ctx.lineTo(x,CH); ctx.stroke();
+  });
+  ctx.fillStyle='#0d1e35'; ctx.textAlign='left';
+  ctx.font='bold 15px "IBM Plex Sans",sans-serif';
+  ctx.fillText((title||'UNTITLED').toUpperCase(),14,tbY+22);
+  ctx.font='11px "IBM Plex Mono",monospace'; ctx.fillStyle='#4a7090';
+  ctx.fillText(`Shape: ${data.shape}   Unit: ${unit}`,14,tbY+40);
+  ctx.fillText(`Confidence: ${data.confidence}`,14,tbY+56);
+  if(data.notes){ctx.fillStyle='#6a8caa';ctx.font='10px "IBM Plex Mono",monospace';ctx.fillText((data.notes||'').slice(0,85)+(data.notes.length>85?'…':''),14,tbY+74);}
+  const ds=new Date().toLocaleDateString('en-AU');
+  ctx.fillStyle='#2a4060'; ctx.font='11px "IBM Plex Mono",monospace';
+  ctx.fillText(`Date: ${ds}`,CW*.36+12,tbY+22);
+  ctx.fillText('Scale: NTS',CW*.36+12,tbY+38);
+  ctx.fillText('Drawn by: Sketch Digitizer',CW*.36+12,tbY+54);
+
+  // Logos in title block
+  if(logos[1]){const i=new Image();i.src=logos[1];try{ctx.drawImage(i,CW*.54+12,tbY+8,100,TB-16);}catch{}}
+  else{ctx.fillStyle='#2a4060';ctx.font='bold 13px "IBM Plex Sans",sans-serif';ctx.fillText('D&R Group',CW*.54+12,tbY+24);ctx.font='11px "IBM Plex Mono",monospace';ctx.fillStyle='#6a8caa';ctx.fillText('Entacon Group',CW*.54+12,tbY+42);}
+  if(logos[2]){const i=new Image();i.src=logos[2];try{ctx.drawImage(i,CW*.54+130,tbY+8,100,TB-16);}catch{}}
+
+  // Features / notes
+  const feats=(data.features||[]).filter(f=>f.description);
+  if(feats.length){
+    ctx.font='bold 10px "IBM Plex Mono",monospace'; ctx.fillStyle='#8b3030';
+    ctx.fillText('NOTES:',CW*.72+12,tbY+16);
+    ctx.font='10px "IBM Plex Mono",monospace'; ctx.fillStyle='#4a5568';
+    feats.slice(0,5).forEach((f,i)=>ctx.fillText((`• ${f.description}`).slice(0,54),CW*.72+12,tbY+30+i*16));
+  }
+  ctx.strokeStyle='#1a3358'; ctx.lineWidth=2.5; ctx.strokeRect(3,3,CW-6,CH-6);
+  ctx.restore();
+
+  document.getElementById('drawing-panel').style.display='block';
+  document.getElementById('scale-label').textContent=`Scale: NTS | Units: ${unit} | ${new Date().toLocaleDateString('en-AU')}`;
+  document.getElementById('drawing-panel').scrollIntoView({behavior:'smooth',block:'start'});
+  setStatus('Drawing ready — export as PDF or PNG.','ok');
+}
+
+function arw(ctx,fx,fy,tx,ty){
+  const a=Math.atan2(ty-fy,tx-fx),l=9;
+  ctx.beginPath(); ctx.moveTo(tx,ty);
+  ctx.lineTo(tx-l*Math.cos(a-.38),ty-l*Math.sin(a-.38));
+  ctx.lineTo(tx-l*Math.cos(a+.38),ty-l*Math.sin(a+.38));
+  ctx.closePath(); ctx.fill();
+}
+
+function bboxDims(ctx,ox,oy,sw,sh,rW,rH,unit){
+  ctx.save(); ctx.strokeStyle='#1a5fb4'; ctx.fillStyle='#1a5fb4'; ctx.lineWidth=1.4;
+  ctx.font='bold 12px "IBM Plex Mono",monospace';
+  const O=36;
+  ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(ox,oy+sh);ctx.lineTo(ox,oy+sh+O+8);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox+sw,oy+sh);ctx.lineTo(ox+sw,oy+sh+O+8);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(ox,oy+sh+O);ctx.lineTo(ox+sw,oy+sh+O);ctx.stroke();
+  arw(ctx,ox,oy+sh+O,ox+sw,oy+sh+O); arw(ctx,ox+sw,oy+sh+O,ox,oy+sh+O);
+  ctx.textAlign='center';ctx.fillText(`${rW.toLocaleString()} ${unit}`,ox+sw/2,oy+sh+O+16);
+  ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(ox+sw,oy);ctx.lineTo(ox+sw+O+8,oy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox+sw,oy+sh);ctx.lineTo(ox+sw+O+8,oy+sh);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(ox+sw+O,oy);ctx.lineTo(ox+sw+O,oy+sh);ctx.stroke();
+  arw(ctx,ox+sw+O,oy,ox+sw+O,oy+sh); arw(ctx,ox+sw+O,oy+sh,ox+sw+O,oy);
+  ctx.save();ctx.translate(ox+sw+O+16,oy+sh/2);ctx.rotate(Math.PI/2);
+  ctx.textAlign='center';ctx.fillText(`${rH.toLocaleString()} ${unit}`,0,0);ctx.restore();
+  ctx.restore();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function downloadPDF(){
+  const cv=document.getElementById('draw-canvas');
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'landscape',unit:'px',format:[cv.width,cv.height]});
+  pdf.addImage(cv.toDataURL('image/png'),'PNG',0,0,cv.width,cv.height);
+  pdf.save(`${(curTitle||'drawing').replace(/[^a-zA-Z0-9_-]/g,'_')}.pdf`);
+}
+
+function downloadPNG(){
+  const cv=document.getElementById('draw-canvas');
+  const a=document.createElement('a');
+  a.href=cv.toDataURL('image/png');
+  a.download=`${(curTitle||'drawing').replace(/[^a-zA-Z0-9_-]/g,'_')}.png`;
+  a.click();
+}
+</script>
+</body>
+</html>
